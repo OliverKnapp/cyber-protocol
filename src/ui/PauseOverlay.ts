@@ -11,6 +11,7 @@ export class PauseOverlay {
   constructor(
     parent: HTMLElement,
     onResume: () => void,
+    onOpenSettings: () => void,
     onOpenCodex: () => void,
     onRestart: () => void,
     onQuit: () => void
@@ -47,19 +48,16 @@ export class PauseOverlay {
           }
         },
         {
+          id: 'settings',
+          label: 'SYSTEM CONFIGURATION',
+          subtext: 'Adjust audio levels, CRT scanline shader, and screen shake',
+          onSelect: onOpenSettings
+        },
+        {
           id: 'codex',
           label: 'TACTICAL CODEX',
           subtext: 'View weapon blueprints, enemy Intel, and keyboard keybindings',
           onSelect: onOpenCodex
-        },
-        {
-          id: 'audio',
-          label: 'TOGGLE AUDIO MUTE',
-          subtext: 'Mute/unmute procedural synth engine',
-          onSelect: () => {
-            const isMuted = SoundSynth.getInstance().toggleMute();
-            alert(`Audio ${isMuted ? 'Muted' : 'Unmuted'}`);
-          }
         },
         {
           id: 'restart',

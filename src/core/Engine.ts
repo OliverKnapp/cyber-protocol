@@ -31,6 +31,7 @@ import { PauseOverlay } from '../ui/PauseOverlay';
 import { GameOverOverlay } from '../ui/GameOverOverlay';
 import { CodexOverlay } from '../ui/CodexOverlay';
 import { WorkshopOverlay } from '../ui/WorkshopOverlay';
+import { SettingsOverlay } from '../ui/SettingsOverlay';
 
 export class Engine {
   private canvas: HTMLCanvasElement;
@@ -57,6 +58,7 @@ export class Engine {
   private gameOverOverlay!: GameOverOverlay;
   private codexOverlay!: CodexOverlay;
   private workshopOverlay!: WorkshopOverlay;
+  private settingsOverlay!: SettingsOverlay;
 
   // Timing
   private lastTime: number = 0;
@@ -146,10 +148,16 @@ export class Engine {
     this.pauseOverlay = new PauseOverlay(
       uiContainer,
       () => this.resumeGame(),
+      () => this.openSettings(),
       () => this.openCodex(),
       () => this.restartRun(),
       () => this.returnToTitle()
     );
+
+    this.settingsOverlay = new SettingsOverlay(uiContainer, () => {
+      this.state = GameState.PAUSED;
+      this.pauseOverlay.show();
+    });
 
     this.gameOverOverlay = new GameOverOverlay(
       uiContainer,
@@ -302,6 +310,10 @@ export class Engine {
       case GameState.WORKSHOP:
         this.workshopOverlay.handleInput();
         break;
+
+      case GameState.SETTINGS:
+        this.settingsOverlay.handleInput();
+        break;
     }
 
     // Flush single-frame input flags at end of frame
@@ -411,6 +423,12 @@ export class Engine {
     this.state = GameState.WORKSHOP;
     this.titleScreen.hide();
     this.workshopOverlay.show();
+  }
+
+  private openSettings(): void {
+    this.state = GameState.SETTINGS;
+    this.pauseOverlay.hide();
+    this.settingsOverlay.show();
   }
 
   private triggerGameOver(): void {
