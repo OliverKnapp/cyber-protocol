@@ -70,6 +70,8 @@ export class EnemyAIComponent implements Component {
   public stateTimer: number = 0;
   public state: 'chase' | 'orbit' | 'telegraph' | 'dash' | 'special' = 'chase';
   public customAngle: number = 0;
+  public isElite: boolean = false;
+  public eliteModifier?: 'shielded' | 'speed' | 'splitter' | 'volatile';
 
   constructor(
     public enemyType: EnemyType,

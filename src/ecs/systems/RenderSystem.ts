@@ -1,7 +1,7 @@
 // High-performance procedural Cyberpunk Vector Neon Renderer
 
 import { System, World } from '../World';
-import { TransformComponent, RenderComponent, HealthComponent, ProjectileComponent } from '../Component';
+import { TransformComponent, RenderComponent, HealthComponent, EnemyAIComponent } from '../Component';
 import { Camera } from '../../core/Camera';
 import { EntityType, EnemyType } from '../../types';
 
@@ -81,9 +81,11 @@ export class RenderSystem implements System {
         case EntityType.PLAYER:
           this.renderPlayer(ctx, r, h);
           break;
-        case EntityType.ENEMY:
-          this.renderEnemy(ctx, r, h);
+        case EntityType.ENEMY: {
+          const ai = entity.getComponent<EnemyAIComponent>('EnemyAI');
+          this.renderEnemy(ctx, r, h, ai);
           break;
+        }
         case EntityType.PROJECTILE:
           this.renderProjectile(ctx, r);
           break;
@@ -225,13 +227,43 @@ export class RenderSystem implements System {
     }
   }
 
-  private renderEnemy(ctx: CanvasRenderingContext2D, r: RenderComponent, h?: HealthComponent): void {
+  private renderEnemy(ctx: CanvasRenderingContext2D, r: RenderComponent, h?: HealthComponent, ai?: EnemyAIComponent): void {
     const pts = r.points || 3;
     const rad = r.radius;
 
     ctx.fillStyle = '#150a17';
     ctx.strokeStyle = r.color;
     ctx.lineWidth = 2;
+
+    // Render Elite Crown / Aura
+    if (ai?.isElite) {
+      ctx.save();
+      ctx.strokeStyle = '#ffe600';
+      ctx.shadowColor = '#ffaa00';
+      ctx.shadowBlur = 18;
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      for (let i = 0; i < 6; i++) {
+        const a = (i * Math.PI * 2) / 6;
+        const ex = Math.cos(a) * (rad + 8);
+        const ey = Math.sin(a) * (rad + 8);
+        if (i === 0) ctx.moveTo(ex, ey);
+        else ctx.lineTo(ex, ey);
+      }
+      ctx.closePath();
+      ctx.stroke();
+
+      // Frontal shield barrier if shielded modifier
+      if (ai.eliteModifier === 'shielded') {
+        ctx.strokeStyle = '#00f3ff';
+        ctx.shadowColor = '#00f3ff';
+        ctx.lineWidth = 3.5;
+        ctx.beginPath();
+        ctx.arc(0, 0, rad + 14, -0.7, 0.7);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
 
     if (r.shape === 'boss') {
       // Boss Nexus Mech

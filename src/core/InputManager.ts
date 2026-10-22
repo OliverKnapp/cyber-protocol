@@ -22,6 +22,7 @@ export enum InputAction {
   SELECT_3 = 'SELECT_3',
   SELECT_4 = 'SELECT_4',
   OPEN_CODEX = 'OPEN_CODEX',
+  SWITCH_WEAPON = 'SWITCH_WEAPON',
   MUTE = 'MUTE'
 }
 
@@ -54,6 +55,7 @@ export class InputManager {
     [InputAction.SELECT_3, ['Digit3', 'Numpad3']],
     [InputAction.SELECT_4, ['Digit4', 'Numpad4']],
     [InputAction.OPEN_CODEX, ['KeyC']],
+    [InputAction.SWITCH_WEAPON, ['KeyQ', 'Tab']],
     [InputAction.MUTE, ['KeyM']]
   ]);
 

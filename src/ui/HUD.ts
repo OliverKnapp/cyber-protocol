@@ -93,7 +93,8 @@ export class HUD {
           <span class="key-tag">[WASD]</span> Move &bull;
           <span class="key-tag">[SPACE / J]</span> Fire &bull;
           <span class="key-tag">[SHIFT / K]</span> Dash &bull;
-          <span class="key-tag">[E]</span> EMP Wave &bull;
+          <span class="key-tag">[TAB / Q]</span> Switch &bull;
+          <span class="key-tag">[E]</span> EMP &bull;
           <span class="key-tag">[C]</span> Codex &bull;
           <span class="key-tag">[ESC]</span> Pause
         </div>

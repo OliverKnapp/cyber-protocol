@@ -13,6 +13,7 @@ export enum GameState {
   GAME_OVER = 'GAME_OVER',
   CODEX = 'CODEX',
   SETTINGS = 'SETTINGS',
+  WORKSHOP = 'WORKSHOP',
   VICTORY = 'VICTORY'
 }
 
@@ -41,6 +42,31 @@ export enum WeaponId {
   RAILGUN = 'RAILGUN',
   SCATTER_CANNON = 'SCATTER_CANNON',
   SINGULARITY_LAUNCHER = 'SINGULARITY_LAUNCHER'
+}
+
+export enum ChassisId {
+  VANGUARD_ASSAULT = 'VANGUARD_ASSAULT',
+  RONIN_STRIKER = 'RONIN_STRIKER',
+  PHANTOM_SPECTRE = 'PHANTOM_SPECTRE',
+  JUGGERNAUT_COLOSSUS = 'JUGGERNAUT_COLOSSUS'
+}
+
+export interface ChassisDef {
+  id: ChassisId;
+  name: string;
+  tagline: string;
+  description: string;
+  baseWeapon: WeaponId;
+  baseHp: number;
+  baseSpeed: number;
+  dashSpeed: number;
+  dashCooldown: number;
+  armor: number;
+  critChance: number;
+  color: string;
+  glowColor: string;
+  passiveName: string;
+  passiveDesc: string;
 }
 
 export enum PerkTier {

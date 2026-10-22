@@ -80,17 +80,38 @@ export class SpawnSystem implements System {
     const x = px + Math.cos(angle) * distance;
     const y = py + Math.sin(angle) * distance;
 
-    // Scale health with wave
-    const healthMultiplier = 1 + (this.runStats.wave - 1) * 0.18;
+    // Check elite roll
+    const eliteChance = Math.min(0.35, (this.runStats.wave - 1) * 0.08);
+    const isElite = this.runStats.wave >= 2 && Math.random() < eliteChance;
+
+    const modifiers: ('shielded' | 'speed' | 'splitter' | 'volatile')[] = ['shielded', 'speed', 'splitter', 'volatile'];
+    const modifier = isElite ? modifiers[Math.floor(Math.random() * modifiers.length)] : undefined;
+
+    // Scale health with wave and elite multiplier
+    const healthMultiplier = (1 + (this.runStats.wave - 1) * 0.18) * (isElite ? 2.5 : 1.0);
     const hp = Math.round(def.maxHp * healthMultiplier);
+    const speed = def.speed * (modifier === 'speed' ? 1.45 : 1.0);
+    const radius = def.radius * (isElite ? 1.3 : 1.0);
+    const color = isElite ? '#ffe600' : def.color;
+    const glow = isElite ? '#ffaa00' : def.glowColor;
 
     const enemy = world.createEntity();
+    const aiComp = new EnemyAIComponent(
+      type,
+      speed,
+      def.attackCooldown * (isElite ? 0.8 : 1.0),
+      def.scoreValue * (isElite ? 3 : 1),
+      def.xpValue * (isElite ? 3 : 1)
+    );
+    aiComp.isElite = isElite;
+    aiComp.eliteModifier = modifier;
+
     enemy.addComponent(new TransformComponent(x, y, angle))
-         .addComponent(new VelocityComponent(0, 0, 0.94, def.speed))
-         .addComponent(new ColliderComponent(def.radius, false, 'enemy'))
+         .addComponent(new VelocityComponent(0, 0, 0.94, speed))
+         .addComponent(new ColliderComponent(radius, false, 'enemy'))
          .addComponent(new HealthComponent(hp, hp))
-         .addComponent(new EnemyAIComponent(type, def.speed, def.attackCooldown, def.scoreValue, def.xpValue))
-         .addComponent(new RenderComponent(EntityType.ENEMY, def.color, def.glowColor, def.radius, def.shape, def.points));
+         .addComponent(aiComp)
+         .addComponent(new RenderComponent(EntityType.ENEMY, color, glow, radius, def.shape, def.points));
   }
 
   private spawnBoss(world: World): void {

@@ -1,14 +1,14 @@
 // Core Game Engine & State Orchestrator
 
-import { GameState, PlayerStats, RunStats, WeaponId, EntityType, Perk } from '../types';
+import { GameState, PlayerStats, RunStats, EntityType, Perk, ChassisId } from '../types';
 import { World } from '../ecs/World';
 import { Camera } from './Camera';
 import { InputManager, InputAction } from './InputManager';
 import { EventBus, GameEvents } from './EventBus';
 import { SoundSynth } from '../audio/SoundSynth';
-import { MusicTracker } from '../audio/MusicTracker';
 import { SaveManager } from '../storage/SaveManager';
 import { getRandomPerks } from '../content/Perks';
+import { CHASSIS_REGISTRY } from '../content/Chassis';
 
 // ECS Components
 import { TransformComponent, VelocityComponent, HealthComponent, ColliderComponent, RenderComponent, PlayerControlComponent } from '../ecs/Component';
@@ -30,6 +30,7 @@ import { UpgradeOverlay } from '../ui/UpgradeOverlay';
 import { PauseOverlay } from '../ui/PauseOverlay';
 import { GameOverOverlay } from '../ui/GameOverOverlay';
 import { CodexOverlay } from '../ui/CodexOverlay';
+import { WorkshopOverlay } from '../ui/WorkshopOverlay';
 
 export class Engine {
   private canvas: HTMLCanvasElement;
@@ -39,6 +40,7 @@ export class Engine {
   private state: GameState = GameState.TITLE;
 
   // Run State & Stats
+  private currentChassis: ChassisId = ChassisId.VANGUARD_ASSAULT;
   private playerStats: PlayerStats;
   private runStats: RunStats;
   private activePerks: Map<string, Perk> = new Map();
@@ -54,6 +56,7 @@ export class Engine {
   private pauseOverlay!: PauseOverlay;
   private gameOverOverlay!: GameOverOverlay;
   private codexOverlay!: CodexOverlay;
+  private workshopOverlay!: WorkshopOverlay;
 
   // Timing
   private lastTime: number = 0;
@@ -65,7 +68,7 @@ export class Engine {
     this.camera = new Camera(canvas.width, canvas.height);
     this.world = new World();
 
-    this.playerStats = this.createInitialPlayerStats(WeaponId.PLASMA_BLASTER);
+    this.playerStats = this.createInitialPlayerStats(this.currentChassis);
     this.runStats = this.createInitialRunStats();
 
     this.initUI(uiContainer);
@@ -76,34 +79,37 @@ export class Engine {
     window.addEventListener('resize', () => this.resize());
   }
 
-  private createInitialPlayerStats(weapon: WeaponId): PlayerStats {
+  private createInitialPlayerStats(chassisId: ChassisId): PlayerStats {
     const save = SaveManager.getInstance();
     const up = save.getData().permanentUpgrades;
+    const c = CHASSIS_REGISTRY[chassisId];
 
-    const baseHp = 100 + up.maxHpLevel * 10;
+    const baseHp = c.baseHp + up.maxHpLevel * 12;
     const baseDamage = 1.0 + up.damageLevel * 0.05;
-    const baseSpeed = 260 * (1 + up.speedLevel * 0.04);
-    const baseMagnet = 180 + up.magnetLevel * 20;
+    const baseSpeed = c.baseSpeed * (1 + up.speedLevel * 0.04);
+    const baseDashSpeed = c.dashSpeed * (1 + up.speedLevel * 0.05);
+    const baseMagnet = 180 + up.magnetLevel * 25;
+    const startingOverdrive = Math.min(100, up.startingCoresLevel * 15);
 
     return {
       maxHp: baseHp,
       hp: baseHp,
       speed: baseSpeed,
-      dashSpeed: 820,
+      dashSpeed: baseDashSpeed,
       dashCooldown: 0,
-      dashDuration: 0.18,
+      dashDuration: chassisId === ChassisId.RONIN_STRIKER ? 0.22 : 0.18,
       dashTimer: 0,
       isDashing: false,
       damageMultiplier: baseDamage,
-      attackSpeedMultiplier: 1.0,
-      projectileSpeedMultiplier: 1.0,
-      critChance: 0.10,
-      critDamage: 0.50,
+      attackSpeedMultiplier: chassisId === ChassisId.VANGUARD_ASSAULT ? 1.10 : 1.0,
+      projectileSpeedMultiplier: chassisId === ChassisId.VANGUARD_ASSAULT ? 1.15 : 1.0,
+      critChance: c.critChance,
+      critDamage: chassisId === ChassisId.PHANTOM_SPECTRE ? 0.85 : 0.50,
       pickupRadius: baseMagnet,
-      armor: 0,
+      armor: c.armor,
       xpMultiplier: 1.0,
-      currentWeapon: weapon,
-      overdriveCharge: 0,
+      currentWeapon: c.baseWeapon,
+      overdriveCharge: startingOverdrive,
       maxOverdrive: 100,
       isOverdriveActive: false,
       overdriveTimer: 0
@@ -130,8 +136,9 @@ export class Engine {
 
     this.titleScreen = new TitleMainframe(
       uiContainer,
-      (selectedWeapon) => this.startRun(selectedWeapon),
-      () => this.openCodex()
+      (selectedChassis) => this.startRun(selectedChassis),
+      () => this.openCodex(),
+      () => this.openWorkshop()
     );
 
     this.upgradeOverlay = new UpgradeOverlay(uiContainer);
@@ -156,6 +163,11 @@ export class Engine {
       if (this.state === GameState.CODEX) {
         this.state = this.hudIsVisible() ? GameState.PAUSED : GameState.TITLE;
       }
+    });
+
+    this.workshopOverlay = new WorkshopOverlay(uiContainer, () => {
+      this.state = GameState.TITLE;
+      this.titleScreen.show();
     });
   }
 
@@ -226,7 +238,7 @@ export class Engine {
       SoundSynth.getInstance().toggleMute();
     }
 
-    if (input.isJustPressed(InputAction.OPEN_CODEX) && this.state !== GameState.LEVEL_UP) {
+    if (input.isJustPressed(InputAction.OPEN_CODEX) && this.state !== GameState.LEVEL_UP && this.state !== GameState.WORKSHOP) {
       if (this.state === GameState.CODEX) {
         this.codexOverlay.hide();
         this.state = this.hudIsVisible() ? GameState.PLAYING : GameState.TITLE;
@@ -270,13 +282,11 @@ export class Engine {
 
       case GameState.LEVEL_UP:
         this.upgradeOverlay.handleInput();
-        // Still render current frame under overlay
         this.renderSystem.update(0, this.world);
         break;
 
       case GameState.PAUSED:
         this.pauseOverlay.handleInput();
-        // Render current frozen frame
         this.renderSystem.update(0, this.world);
         break;
 
@@ -288,6 +298,10 @@ export class Engine {
       case GameState.CODEX:
         this.codexOverlay.handleInput();
         break;
+
+      case GameState.WORKSHOP:
+        this.workshopOverlay.handleInput();
+        break;
     }
 
     // Flush single-frame input flags at end of frame
@@ -296,22 +310,27 @@ export class Engine {
     requestAnimationFrame((t) => this.loop(t));
   }
 
-  public startRun(weapon: WeaponId): void {
+  public startRun(chassisId: ChassisId): void {
+    this.currentChassis = chassisId;
     this.world.clear();
     this.activePerks.clear();
 
-    this.playerStats = this.createInitialPlayerStats(weapon);
+    const cDef = CHASSIS_REGISTRY[chassisId];
+    this.playerStats = this.createInitialPlayerStats(chassisId);
     this.runStats = this.createInitialRunStats();
     this.spawnSystem.reset();
 
     // Spawn Player Entity at (0, 0)
+    const pts = chassisId === ChassisId.JUGGERNAUT_COLOSSUS ? 6 : chassisId === ChassisId.PHANTOM_SPECTRE ? 4 : 3;
+    const rad = chassisId === ChassisId.JUGGERNAUT_COLOSSUS ? 20 : 16;
+
     const player = this.world.createEntity();
     player.addComponent(new TransformComponent(0, 0, -Math.PI / 2))
           .addComponent(new VelocityComponent(0, 0, 0.90, this.playerStats.speed))
           .addComponent(new ColliderComponent(14, false, 'player'))
           .addComponent(new HealthComponent(this.playerStats.maxHp, this.playerStats.maxHp))
           .addComponent(new PlayerControlComponent())
-          .addComponent(new RenderComponent(EntityType.PLAYER, '#00f3ff', '#00f3ff', 16, 'polygon', 3));
+          .addComponent(new RenderComponent(EntityType.PLAYER, cDef.color, cDef.glowColor, rad, 'polygon', pts));
 
     this.camera.x = -this.canvas.width / 2;
     this.camera.y = -this.canvas.height / 2;
@@ -371,7 +390,7 @@ export class Engine {
   private restartRun(): void {
     this.pauseOverlay.hide();
     this.gameOverOverlay.hide();
-    this.startRun(this.playerStats.currentWeapon);
+    this.startRun(this.currentChassis);
   }
 
   private returnToTitle(): void {
@@ -386,6 +405,12 @@ export class Engine {
   private openCodex(): void {
     this.state = GameState.CODEX;
     this.codexOverlay.show();
+  }
+
+  private openWorkshop(): void {
+    this.state = GameState.WORKSHOP;
+    this.titleScreen.hide();
+    this.workshopOverlay.show();
   }
 
   private triggerGameOver(): void {

@@ -65,43 +65,65 @@ export class SaveManager {
     return SaveManager.instance;
   }
 
+  private memoryStorage: Map<string, string> = new Map();
+
+  private isStorageAvailable(): boolean {
+    return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined' && window.localStorage !== null;
+  }
+
   private loadData(): MetaProgression {
     try {
-      const raw = localStorage.getItem(this.SAVE_KEY);
+      const raw = this.isStorageAvailable()
+        ? window.localStorage.getItem(this.SAVE_KEY)
+        : this.memoryStorage.get(this.SAVE_KEY);
+
       if (raw) {
         return { ...this.defaultData, ...JSON.parse(raw) };
       }
-    } catch (e) {
-      console.warn('Failed to read save data, using defaults:', e);
+    } catch {
+      // Return defaults on parse error
     }
     return { ...this.defaultData };
   }
 
   public saveData(): void {
     try {
-      localStorage.setItem(this.SAVE_KEY, JSON.stringify(this.data));
-    } catch (e) {
-      console.error('Failed to write save data:', e);
+      const serialized = JSON.stringify(this.data);
+      if (this.isStorageAvailable()) {
+        window.localStorage.setItem(this.SAVE_KEY, serialized);
+      } else {
+        this.memoryStorage.set(this.SAVE_KEY, serialized);
+      }
+    } catch {
+      // Storage quota or error safe
     }
   }
 
   private loadSettings(): GameSettings {
     try {
-      const raw = localStorage.getItem(this.SETTINGS_KEY);
+      const raw = this.isStorageAvailable()
+        ? window.localStorage.getItem(this.SETTINGS_KEY)
+        : this.memoryStorage.get(this.SETTINGS_KEY);
+
       if (raw) {
         return { ...this.defaultSettings, ...JSON.parse(raw) };
       }
-    } catch (e) {
-      console.warn('Failed to read settings, using defaults:', e);
+    } catch {
+      // Defaults on error
     }
     return { ...this.defaultSettings };
   }
 
   public saveSettings(): void {
     try {
-      localStorage.setItem(this.SETTINGS_KEY, JSON.stringify(this.settings));
-    } catch (e) {
-      console.error('Failed to write settings:', e);
+      const serialized = JSON.stringify(this.settings);
+      if (this.isStorageAvailable()) {
+        window.localStorage.setItem(this.SETTINGS_KEY, serialized);
+      } else {
+        this.memoryStorage.set(this.SETTINGS_KEY, serialized);
+      }
+    } catch {
+      // Safe
     }
   }
 

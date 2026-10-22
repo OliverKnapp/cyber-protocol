@@ -40,9 +40,21 @@ export class CombatSystem implements System {
         this.spawnXpGem(world, t.x, t.y, ai.xpValue);
 
         // 4. Spawn Explosion Sparks
-        this.spawnExplosionParticles(world, t.x, t.y, isBoss ? 45 : 14, isBoss ? '#ff0055' : '#00ffff');
+        this.spawnExplosionParticles(world, t.x, t.y, isBoss ? 45 : ai.isElite ? 28 : 14, isBoss ? '#ff0055' : ai.isElite ? '#ffe600' : '#00ffff');
 
-        // 5. Emit event
+        // 5. Elite modifier death effects
+        if (ai.isElite) {
+          if (ai.eliteModifier === 'splitter') {
+            // Spawn two mini drones
+            this.spawnMiniDrone(world, t.x - 20, t.y);
+            this.spawnMiniDrone(world, t.x + 20, t.y);
+          } else if (ai.eliteModifier === 'volatile') {
+            // Ring of energy explosion particles
+            this.spawnExplosionParticles(world, t.x, t.y, 20, '#ff3300');
+          }
+        }
+
+        // 6. Emit event
         eventBus.emit(GameEvents.ENEMY_DIED, {
           enemyType: ai.enemyType,
           x: t.x,
@@ -82,5 +94,15 @@ export class CombatSystem implements System {
        .addComponent(new ParticleComponent(2.0, 6.0, true))
        .addComponent(new LifetimeComponent(life));
     }
+  }
+
+  private spawnMiniDrone(world: World, x: number, y: number): void {
+    const mini = world.createEntity();
+    mini.addComponent(new TransformComponent(x, y, 0))
+        .addComponent(new VelocityComponent(0, 0, 0.94, 180))
+        .addComponent(new ColliderComponent(9, false, 'enemy'))
+        .addComponent(new HealthComponent(18, 18))
+        .addComponent(new EnemyAIComponent(EnemyType.DRONE_SWARM, 180, 1.5, 50, 1))
+        .addComponent(new RenderComponent(EntityType.ENEMY, '#ff0055', '#ff0033', 9, 'polygon', 3));
   }
 }

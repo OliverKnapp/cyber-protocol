@@ -102,7 +102,29 @@ export class InputSystem implements System {
       this.fireWeapon(world, transform.x, transform.y, transform.rotation, currentWeaponDef);
     }
 
-    // 4. Overdrive Activation (EMP Wave)
+    // 4. Weapon Switching (Tab / Q)
+    if (input.isJustPressed(InputAction.SWITCH_WEAPON)) {
+      if (this.playerStats.secondaryWeapon) {
+        const temp = this.playerStats.currentWeapon;
+        this.playerStats.currentWeapon = this.playerStats.secondaryWeapon;
+        this.playerStats.secondaryWeapon = temp;
+        synth.playMenuBeep(true);
+      } else {
+        // Cycle available weapons
+        const weapons = [
+          WeaponId.PLASMA_BLASTER,
+          WeaponId.KINETIC_BLADE,
+          WeaponId.RAILGUN,
+          WeaponId.SCATTER_CANNON,
+          WeaponId.SINGULARITY_LAUNCHER
+        ];
+        const curIdx = weapons.indexOf(this.playerStats.currentWeapon);
+        this.playerStats.currentWeapon = weapons[(curIdx + 1) % weapons.length];
+        synth.playMenuBeep(true);
+      }
+    }
+
+    // 5. Overdrive Activation (EMP Wave)
     if (input.isJustPressed(InputAction.OVERDRIVE) && this.playerStats.overdriveCharge >= this.playerStats.maxOverdrive) {
       this.triggerOverdrive(world, transform.x, transform.y);
     }
