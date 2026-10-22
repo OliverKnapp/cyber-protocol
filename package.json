@@ -1,0 +1,32 @@
+{
+  "name": "cyber-protocol",
+  "version": "1.0.0",
+  "description": "High-octane keyboard-only roguelite action game. Zero mouse required. Built with TypeScript, ECS architecture, and procedural Web Audio synth.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test": "vitest run"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OliverKnapp/cyber-protocol.git"
+  },
+  "keywords": [
+    "game",
+    "roguelite",
+    "keyboard-only",
+    "cyberpunk",
+    "ecs",
+    "typescript"
+  ],
+  "author": "OliverKnapp",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^22.13.4",
+    "typescript": "^5.7.3",
+    "vite": "^6.1.0",
+    "vitest": "^3.0.5"
+  }
+}

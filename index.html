@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Cyber Protocol - High-octane keyboard-only roguelite action game. Zero mouse required. Built with TypeScript, ECS architecture, and procedural Web Audio synth." />
+    <title>CYBER PROTOCOL // 100% Keyboard-Only Roguelite</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./src/style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <!-- High-performance procedural 2D Vector Canvas -->
+      <canvas id="game-canvas"></canvas>
+
+      <!-- Retro CRT Scanline & Vignette Effect -->
+      <div id="crt-scanline-layer" class="crt-overlay"></div>
+
+      <!-- DOM Layer for Accessible Keyboard Menus, Overlays, & HUD -->
+      <div id="ui-container"></div>
+    </div>
+
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>
